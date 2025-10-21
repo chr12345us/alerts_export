@@ -13,7 +13,8 @@ reports_*.json
 
 #exclude saves
 saves/
-*.py
+saves/*.py
+saves/*.md
 
 # Python cache files
 __pycache__/

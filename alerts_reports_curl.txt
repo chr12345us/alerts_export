@@ -1,0 +1,17 @@
+
+
+curl -X GET "http://localhost:9200/vrm-scheduled-report-definition-vrm-ty-vrm-scheduled-report-definition/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 9999
+}' > reports.json
+
+curl -X GET "http://localhost:9200/rt-alert-def-vrm-ty-rt-alert-def-vrm/_search?pretty" -H 'Content-Type: application/json' -d'
+{
+  "query": {
+    "match_all": {}
+  },
+  "size": 9999
+}' > alerts.json
