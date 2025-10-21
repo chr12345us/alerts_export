@@ -11,6 +11,10 @@ alerts_*.json
 reports_*.json
 *_definitions_*.json
 
+#exclude saves
+saves/
+*.py
+
 # Python cache files
 __pycache__/
 *.py[cod]
