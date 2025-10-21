@@ -10,7 +10,6 @@ json_files/
 exported_configs*/
 alerts_*.json
 reports_*.json
-*_definitions_*.json
 
 #exclude saves
 saves/

@@ -353,51 +353,6 @@ class SSHTunnelCollector:
             logging.error(f"Unexpected error collecting {file_type}: {e}")
             return False
 
-    def _extract_definitions_only(self, json_file_path, output_file_path, data_type):
-        """Extract only the _source definitions from collected JSON data."""
-        try:
-            logging.info(f"Extracting {data_type} definitions from collected data")
-
-            with open(json_file_path, 'r', encoding='utf-8') as file:
-                json_data = json.load(file)
-
-            # Check if this is an Elasticsearch response format
-            if 'hits' not in json_data:
-                logging.error(f"Invalid JSON format: missing 'hits' field")
-                return False
-
-            hits = json_data.get('hits', {}).get('hits', [])
-            
-            if not hits:
-                logging.warning(f"No {data_type} data to extract")
-                return True
-
-            # Extract only the _source definitions
-            definitions = []
-            for item in hits:
-                source = item.get('_source')
-                if source:
-                    definitions.append(source)
-
-            # Save the definitions to the output file
-            with open(output_file_path, 'w', encoding='utf-8') as output_file:
-                json.dump({
-                    "definitions": definitions,
-                    "count": len(definitions),
-                    "collected_timestamp": self.timestamp,
-                    "data_type": data_type
-                }, output_file, indent=2, ensure_ascii=False)
-
-            logging.info(f"Successfully extracted {len(definitions)} {data_type} definitions to {output_file_path}")
-            return True
-
-        except json.JSONDecodeError as e:
-            logging.error(f"Failed to parse JSON: {e}")
-            return False
-        except Exception as e:
-            logging.error(f"Unexpected error extracting {data_type} definitions: {e}")
-            return False
-
     def collect_reports(self):
         """Collect scheduled report definitions through SSH tunnel."""
         endpoint = "/vrm-scheduled-report-definition-vrm-ty-vrm-scheduled-report-definition/_search"
@@ -423,86 +378,6 @@ class SSHTunnelCollector:
         
         output_file = os.path.join(self.output_dir, f'alerts_{self.timestamp}.json')
         return self._execute_request(endpoint, query, output_file, 'alerts')
-
-    def collect_and_extract_alerts(self):
-        """Collect alert definitions and extract source only through SSH tunnel."""
-        logging.info("Starting SSH tunnel alert definitions collection...")
-        
-        # Create SSH tunnel first
-        if not self.create_ssh_tunnel():
-            logging.error("Failed to create SSH tunnel. Aborting collection.")
-            return False
-        
-        try:
-            endpoint = "/rt-alert-def-vrm-ty-rt-alert-def-vrm/_search"
-            query = {
-                "query": {
-                    "match_all": {}
-                },
-                "size": 9999
-            }
-            
-            # First collect the full data
-            temp_file = os.path.join(self.output_dir, f'temp_alerts_{self.timestamp}.json')
-            success = self._execute_request(endpoint, query, temp_file, 'alerts')
-            
-            if success:
-                # Extract definitions only
-                output_file = os.path.join(self.output_dir, f'alerts_definitions_{self.timestamp}.json')
-                extract_success = self._extract_definitions_only(temp_file, output_file, 'alerts')
-                
-                # Remove temp file
-                try:
-                    os.remove(temp_file)
-                except:
-                    pass
-                    
-                return extract_success
-            return False
-            
-        finally:
-            # Always cleanup tunnel
-            self.cleanup_tunnel()
-
-    def collect_and_extract_reports(self):
-        """Collect scheduled report definitions and extract source only through SSH tunnel."""
-        logging.info("Starting SSH tunnel report definitions collection...")
-        
-        # Create SSH tunnel first
-        if not self.create_ssh_tunnel():
-            logging.error("Failed to create SSH tunnel. Aborting collection.")
-            return False
-        
-        try:
-            endpoint = "/vrm-scheduled-report-definition-vrm-ty-vrm-scheduled-report-definition/_search"
-            query = {
-                "query": {
-                    "match_all": {}
-                },
-                "size": 9999
-            }
-            
-            # First collect the full data
-            temp_file = os.path.join(self.output_dir, f'temp_reports_{self.timestamp}.json')
-            success = self._execute_request(endpoint, query, temp_file, 'reports')
-            
-            if success:
-                # Extract definitions only
-                output_file = os.path.join(self.output_dir, f'reports_definitions_{self.timestamp}.json')
-                extract_success = self._extract_definitions_only(temp_file, output_file, 'reports')
-                
-                # Remove temp file
-                try:
-                    os.remove(temp_file)
-                except:
-                    pass
-                    
-                return extract_success
-            return False
-            
-        finally:
-            # Always cleanup tunnel
-            self.cleanup_tunnel()
 
     def collect_all(self):
         """Collect all configuration files through SSH tunnel."""
@@ -547,10 +422,6 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     parser = argparse.ArgumentParser(description='Collect alerts & reports configuration files through SSH tunnel')
-    parser.add_argument('-as', '--alerts-source', action='store_true',
-                       help='Collect and extract alert source definitions only')
-    parser.add_argument('-rs', '--reports-source', action='store_true',
-                       help='Collect and extract report source definitions only')
     parser.add_argument('--config', '-c', default='config.ini', help='Configuration file path')
     
     args = parser.parse_args()
@@ -558,21 +429,8 @@ def main():
     try:
         collector = SSHTunnelCollector(args.config)
         
-        if args.alerts_source and args.reports_source:
-            # Collect both with source extraction
-            results = {
-                'alerts_definitions': collector.collect_and_extract_alerts(),
-                'reports_definitions': collector.collect_and_extract_reports()
-            }
-        elif args.alerts_source:
-            # Collect only alerts with source extraction
-            results = {'alerts_definitions': collector.collect_and_extract_alerts()}
-        elif args.reports_source:
-            # Collect only reports with source extraction
-            results = {'reports_definitions': collector.collect_and_extract_reports()}
-        else:
-            # Default: collect all with full format
-            results = collector.collect_all()
+        # Collect all configurations
+        results = collector.collect_all()
         
         # Print summary
         print("\n" + "="*50)

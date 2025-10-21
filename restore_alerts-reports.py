@@ -294,54 +294,6 @@ class SSHTunnelRestorer:
         logging.info(f"Starting reports restoration from: {reports_file}")
         return self.restore_from_file(reports_file)
 
-    def extract_definitions_only(self, json_file_path, output_file_path):
-        """Extract only the _source definitions from a JSON file and save to a new file."""
-        try:
-            if not os.path.exists(json_file_path):
-                logging.error(f"File not found: {json_file_path}")
-                return False
-
-            logging.info(f"Extracting definitions from: {json_file_path}")
-
-            with open(json_file_path, 'r', encoding='utf-8') as file:
-                json_data = json.load(file)
-
-            # Check if this is an Elasticsearch response format
-            if 'hits' not in json_data:
-                logging.error(f"Invalid JSON format in {json_file_path}: missing 'hits' field")
-                return False
-
-            hits = json_data.get('hits', {}).get('hits', [])
-            
-            if not hits:
-                logging.warning(f"No data to extract in {json_file_path}")
-                return True
-
-            # Extract only the _source definitions
-            definitions = []
-            for item in hits:
-                source = item.get('_source')
-                if source:
-                    definitions.append(source)
-
-            # Save the definitions to the output file
-            with open(output_file_path, 'w', encoding='utf-8') as output_file:
-                json.dump({
-                    "definitions": definitions,
-                    "count": len(definitions),
-                    "extracted_from": os.path.basename(json_file_path)
-                }, output_file, indent=2, ensure_ascii=False)
-
-            logging.info(f"Successfully extracted {len(definitions)} definitions to {output_file_path}")
-            return True
-
-        except json.JSONDecodeError as e:
-            logging.error(f"Failed to parse JSON in {json_file_path}: {e}")
-            return False
-        except Exception as e:
-            logging.error(f"Unexpected error extracting definitions from {json_file_path}: {e}")
-            return False
-
     def restore_all(self, alerts_filename=None, reports_filename=None):
         """Restore all configuration files through SSH tunnel."""
         logging.info("Starting SSH tunnel configuration restoration...")
@@ -390,10 +342,6 @@ def main():
                        help='Restore alerts. Specify filename or full path (default: alerts.json)')
     parser.add_argument('-r', '--reports', nargs='?', const='reports.json',
                        help='Restore reports. Specify filename or full path (default: reports.json)')
-    parser.add_argument('-as', '--alerts-source', nargs='?', const='alerts.json',
-                       help='Extract alert source definitions only. Specify input filename or full path (default: alerts.json)')
-    parser.add_argument('-rs', '--reports-source', nargs='?', const='reports.json',
-                       help='Extract report source definitions only. Specify input filename or full path (default: reports.json)')
     parser.add_argument('--config', '-c', default='config.ini', help='Configuration file path')
     
     args = parser.parse_args()
@@ -413,26 +361,6 @@ def main():
                 results[filename] = restorer.restore_from_file(args.file)
             finally:
                 restorer.cleanup_tunnel()
-        elif args.alerts_source:
-            # Extract alert source definitions only (no tunnel needed)
-            # If filename contains path separators, use as-is, otherwise join with input_dir
-            if os.path.sep in args.alerts_source or '/' in args.alerts_source:
-                input_file = args.alerts_source
-            else:
-                input_file = os.path.join(restorer.input_dir, args.alerts_source)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = os.path.join(restorer.input_dir, f'alerts_definitions_{timestamp}.json')
-            results['alerts_extract'] = restorer.extract_definitions_only(input_file, output_file)
-        elif args.reports_source:
-            # Extract report source definitions only (no tunnel needed)
-            # If filename contains path separators, use as-is, otherwise join with input_dir
-            if os.path.sep in args.reports_source or '/' in args.reports_source:
-                input_file = args.reports_source
-            else:
-                input_file = os.path.join(restorer.input_dir, args.reports_source)
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_file = os.path.join(restorer.input_dir, f'reports_definitions_{timestamp}.json')
-            results['reports_extract'] = restorer.extract_definitions_only(input_file, output_file)
         elif args.alerts and args.reports:
             # Restore both alerts and reports with specified filenames
             results = restorer.restore_all(args.alerts, args.reports)

@@ -7,7 +7,6 @@ A comprehensive set of Python scripts for collecting, exporting, and restoring E
 - **Cross-platform SSH tunneling** using Python (no external SSH tools required)
 - **Interactive configuration** when config.ini doesn't exist
 - **Secure remote access** to Elasticsearch instances
-- **Flexible collection options** (full format or definitions only)
 - **Timestamped exports** for easy tracking
 - **Command-line interface** with multiple options
 - **Full path support** for input files
@@ -123,21 +122,6 @@ Local tunnel port (default: 9201):
 python collect_alerts-reports.py
 ```
 
-#### Collect Alert Definitions Only
-```bash
-python collect_alerts-reports.py -as
-```
-
-#### Collect Report Definitions Only
-```bash
-python collect_alerts-reports.py -rs
-```
-
-#### Collect Both Definitions
-```bash
-python collect_alerts-reports.py -as -rs
-```
-
 ### Restoration (Import)
 
 #### Restore All Configurations
@@ -160,35 +144,20 @@ python restore_alerts-reports.py -a json_files/alerts_20251021_143900.json
 python restore_alerts-reports.py -r json_files/reports_20251021_143900.json
 ```
 
-#### Extract Definitions from Existing Files (with full paths)
-```bash
-python restore_alerts-reports.py -as json_files/alerts_20251021_143900.json
-python restore_alerts-reports.py -rs json_files/reports_20251021_143900.json
-```
-
 ## 📋 Output Files
 
-### Full Format
-- `alerts_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export
-- `reports_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export
-
-### Definitions Only
-- `alerts_definitions_YYYYMMDD_HHMMSS.json` - Clean definitions
-- `reports_definitions_YYYYMMDD_HHMMSS.json` - Clean definitions
+- `alerts_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export for alerts
+- `reports_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export for reports
 
 ## 🔧 Command Line Options
 
 ### Collection Script Options
-- `-as, --alerts-source` - Extract alert source definitions only
-- `-rs, --reports-source` - Extract report source definitions only
 - `--config CONFIG_FILE` - Specify custom config file
 
 ### Restore Script Options
-- `-a FILENAME, --alerts FILENAME` - Restore alerts from file
-- `-r FILENAME, --reports FILENAME` - Restore reports from file
-- `-as FILENAME, --alerts-source FILENAME` - Extract alert definitions
-- `-rs FILENAME, --reports-source FILENAME` - Extract report definitions
-- `--file FILENAME` - Restore from specific file
+- `-a FILENAME, --alerts FILENAME` - Restore alerts from file (supports full paths)
+- `-r FILENAME, --reports FILENAME` - Restore reports from file (supports full paths)
+- `--file FILENAME` - Restore from specific file (full path)
 - `--config CONFIG_FILE` - Specify custom config file
 
 ## 🔒 Security Features
