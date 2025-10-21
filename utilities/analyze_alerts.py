@@ -232,8 +232,8 @@ def main():
     """Main function to analyze alert JSON files."""
     parser = argparse.ArgumentParser(description='Analyze JSON alert files to extract device IPs, recipients, and syslog servers')
     parser.add_argument('files', nargs='+', help='JSON files to analyze')
-    parser.add_argument('-o', '--output', default='alert_devices.json', 
-                       help='Output JSON file (default: alert_devices.json)')
+    parser.add_argument('-o', '--output', default='json_files/alert_devices.json', 
+                       help='Output JSON file (default: json_files/alert_devices.json)')
     parser.add_argument('-v', '--verbose', action='store_true', 
                        help='Enable verbose debug logging')
     
@@ -246,6 +246,15 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
     
     logging.info("Starting alert analysis")
+    
+    # Ensure output goes to json_files folder if not already specified
+    if not args.output.startswith('json_files/') and not os.path.dirname(args.output):
+        output_file = os.path.join('json_files', args.output)
+    else:
+        output_file = args.output
+    
+    # Create json_files directory if it doesn't exist
+    os.makedirs('json_files', exist_ok=True)
     
     # Collect all data from all files
     all_device_ips = set()
@@ -274,9 +283,9 @@ def main():
     
     # Write results to output file
     try:
-        with open(args.output, 'w', encoding='utf-8') as f:
+        with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(output_data, f, indent=2)
-        logging.info(f"Results written to {args.output}")
+        logging.info(f"Results written to {output_file}")
     except Exception as e:
         logging.error(f"Error writing output file: {e}")
         return 1

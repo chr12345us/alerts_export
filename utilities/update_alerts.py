@@ -230,12 +230,12 @@ def update_alert_file(alert_file, input_data, output_file):
 def main():
     """Main function to update alert files."""
     parser = argparse.ArgumentParser(description='Update alert JSON files using alert_devices.json data')
-    parser.add_argument('-i', '--input', default='alert_devices.json',
-                       help='Input JSON file with device IPs, recipients, and syslog servers (default: alert_devices.json)')
+    parser.add_argument('-i', '--input', default='json_files/alert_devices.json',
+                       help='Input JSON file with device IPs, recipients, and syslog servers (default: json_files/alert_devices.json)')
     parser.add_argument('-a', '--alert', required=True,
                        help='Alert JSON file to update')
     parser.add_argument('-o', '--output', required=True,
-                       help='Output JSON file name')
+                       help='Output JSON file name (will be saved to json_files/ folder)')
     parser.add_argument('-v', '--verbose', action='store_true',
                        help='Enable verbose debug logging')
     
@@ -258,13 +258,22 @@ def main():
         logging.error(f"Alert file not found: {args.alert}")
         return 1
     
+    # Ensure output goes to json_files folder
+    if not args.output.startswith('json_files/'):
+        output_file = os.path.join('json_files', args.output)
+    else:
+        output_file = args.output
+    
+    # Create json_files directory if it doesn't exist
+    os.makedirs('json_files', exist_ok=True)
+    
     # Load input data
     input_data = load_input_data(args.input)
     if not input_data:
         return 1
     
     # Update alert file
-    success = update_alert_file(args.alert, input_data, args.output)
+    success = update_alert_file(args.alert, input_data, output_file)
     
     if success:
         logging.info("Alert file update completed successfully")
