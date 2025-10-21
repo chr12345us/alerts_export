@@ -92,19 +92,25 @@ python collect_alerts-reports.py -as -rs
 python restore_alerts-reports.py
 ```
 
-#### Restore Specific Files
+#### Restore Specific Files (with full paths)
 ```bash
-python restore_alerts-reports.py -a alerts_20251021_143900.json -r reports_20251021_143900.json
+python restore_alerts-reports.py -a json_files/alerts_20251021_143900.json -r json_files/reports_20251021_143900.json
 ```
 
-#### Restore Only Alerts
+#### Restore Only Alerts (with full path)
 ```bash
-python restore_alerts-reports.py -a alerts_20251021_143900.json
+python restore_alerts-reports.py -a json_files/alerts_20251021_143900.json
 ```
 
-#### Extract Definitions from Existing Files
+#### Restore Only Reports (with full path)
 ```bash
-python restore_alerts-reports.py -as alerts_20251021_143900.json
+python restore_alerts-reports.py -r json_files/reports_20251021_143900.json
+```
+
+#### Extract Definitions from Existing Files (with full paths)
+```bash
+python restore_alerts-reports.py -as json_files/alerts_20251021_143900.json
+python restore_alerts-reports.py -rs json_files/reports_20251021_143900.json
 ```
 
 ## 📋 Output Files

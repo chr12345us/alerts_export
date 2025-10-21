@@ -222,7 +222,13 @@ class SSHTunnelRestorer:
         """Restore alert definitions through SSH tunnel."""
         if alerts_filename is None:
             alerts_filename = 'alerts.json'
-        alerts_file = os.path.join(self.input_dir, alerts_filename)
+        
+        # If filename contains path separators, use as-is, otherwise join with input_dir
+        if os.path.sep in alerts_filename or '/' in alerts_filename:
+            alerts_file = alerts_filename
+        else:
+            alerts_file = os.path.join(self.input_dir, alerts_filename)
+            
         logging.info(f"Starting alerts restoration from: {alerts_file}")
         return self.restore_from_file(alerts_file)
 
@@ -230,7 +236,13 @@ class SSHTunnelRestorer:
         """Restore report definitions through SSH tunnel."""
         if reports_filename is None:
             reports_filename = 'reports.json'
-        reports_file = os.path.join(self.input_dir, reports_filename)
+        
+        # If filename contains path separators, use as-is, otherwise join with input_dir
+        if os.path.sep in reports_filename or '/' in reports_filename:
+            reports_file = reports_filename
+        else:
+            reports_file = os.path.join(self.input_dir, reports_filename)
+            
         logging.info(f"Starting reports restoration from: {reports_file}")
         return self.restore_from_file(reports_file)
 
@@ -325,15 +337,15 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     parser = argparse.ArgumentParser(description='Restore alerts & reports configuration files through SSH tunnel')
-    parser.add_argument('--file', '-f', help='Restore from a specific JSON file')
+    parser.add_argument('--file', '-f', help='Restore from a specific JSON file (full path)')
     parser.add_argument('-a', '--alerts', nargs='?', const='alerts.json', 
-                       help='Restore alerts. Optionally specify filename (default: alerts.json)')
+                       help='Restore alerts. Specify filename or full path (default: alerts.json)')
     parser.add_argument('-r', '--reports', nargs='?', const='reports.json',
-                       help='Restore reports. Optionally specify filename (default: reports.json)')
+                       help='Restore reports. Specify filename or full path (default: reports.json)')
     parser.add_argument('-as', '--alerts-source', nargs='?', const='alerts.json',
-                       help='Extract alert source definitions only. Optionally specify input filename (default: alerts.json)')
+                       help='Extract alert source definitions only. Specify input filename or full path (default: alerts.json)')
     parser.add_argument('-rs', '--reports-source', nargs='?', const='reports.json',
-                       help='Extract report source definitions only. Optionally specify input filename (default: reports.json)')
+                       help='Extract report source definitions only. Specify input filename or full path (default: reports.json)')
     parser.add_argument('--config', '-c', default='config.ini', help='Configuration file path')
     
     args = parser.parse_args()
@@ -355,13 +367,21 @@ def main():
                 restorer.cleanup_tunnel()
         elif args.alerts_source:
             # Extract alert source definitions only (no tunnel needed)
-            input_file = os.path.join(restorer.input_dir, args.alerts_source)
+            # If filename contains path separators, use as-is, otherwise join with input_dir
+            if os.path.sep in args.alerts_source or '/' in args.alerts_source:
+                input_file = args.alerts_source
+            else:
+                input_file = os.path.join(restorer.input_dir, args.alerts_source)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = os.path.join(restorer.input_dir, f'alerts_definitions_{timestamp}.json')
             results['alerts_extract'] = restorer.extract_definitions_only(input_file, output_file)
         elif args.reports_source:
             # Extract report source definitions only (no tunnel needed)
-            input_file = os.path.join(restorer.input_dir, args.reports_source)
+            # If filename contains path separators, use as-is, otherwise join with input_dir
+            if os.path.sep in args.reports_source or '/' in args.reports_source:
+                input_file = args.reports_source
+            else:
+                input_file = os.path.join(restorer.input_dir, args.reports_source)
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_file = os.path.join(restorer.input_dir, f'reports_definitions_{timestamp}.json')
             results['reports_extract'] = restorer.extract_definitions_only(input_file, output_file)
