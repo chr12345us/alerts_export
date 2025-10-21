@@ -17,6 +17,7 @@ import signal
 import atexit
 import argparse
 import threading
+import getpass
 from urllib.parse import urljoin
 from datetime import datetime
 import paramiko
@@ -37,7 +38,15 @@ class SSHTunnelCollector:
     def __init__(self, config_file='config.ini'):
         """Initialize the collector with SSH tunnel configuration."""
         self.config = configparser.ConfigParser()
-        self.config.read(config_file)
+        
+        # Check if config file exists, if not, use interactive input
+        if not os.path.exists(config_file):
+            logging.warning(f"Configuration file '{config_file}' not found.")
+            print(f"\n⚠️  Configuration file '{config_file}' not found.")
+            print("Please provide the SSH connection details for the source device:")
+            self._setup_interactive_config()
+        else:
+            self.config.read(config_file)
         
         # SSH tunnel settings
         self.ssh_host = self.config.get('source_device', 'ssh_host')
@@ -73,6 +82,45 @@ class SSHTunnelCollector:
         logging.info(f"SSH: {self.ssh_username}@{self.ssh_host}:{self.ssh_port}")
         logging.info(f"Local tunnel port: {self.local_port}")
         logging.info(f"Timestamp: {self.timestamp}")
+
+    def _setup_interactive_config(self):
+        """Setup configuration interactively when config.ini doesn't exist."""
+        print("\n" + "="*60)
+        print("🔧 INTERACTIVE CONFIGURATION SETUP")
+        print("="*60)
+        
+        # Get source device details
+        print("\n📥 SOURCE DEVICE (where to collect configurations from):")
+        ssh_host = input("SSH Host/IP address: ").strip()
+        ssh_username = input("SSH Username: ").strip()
+        ssh_password = getpass.getpass("SSH Password: ")
+        
+        # Optional settings with defaults
+        ssh_port_input = input("SSH Port (default: 22): ").strip()
+        ssh_port = int(ssh_port_input) if ssh_port_input else 22
+        
+        local_port_input = input("Local tunnel port (default: 9201): ").strip()
+        local_port = int(local_port_input) if local_port_input else 9201
+        
+        # Create in-memory configuration
+        self.config.add_section('source_device')
+        self.config.set('source_device', 'ssh_host', ssh_host)
+        self.config.set('source_device', 'ssh_username', ssh_username)
+        self.config.set('source_device', 'ssh_password', ssh_password)
+        self.config.set('source_device', 'ssh_port', str(ssh_port))
+        self.config.set('source_device', 'local_port', str(local_port))
+        
+        # Add default settings section
+        self.config.add_section('settings')
+        self.config.set('settings', 'output_dir', 'json_files')
+        self.config.set('settings', 'timeout', '30')
+        self.config.set('settings', 'verify_ssl', 'false')
+        
+        print(f"\n✅ Configuration complete!")
+        print(f"📡 Will connect to: {ssh_username}@{ssh_host}:{ssh_port}")
+        print(f"🔗 Local tunnel port: {local_port}")
+        print("\n💡 Tip: Create a 'config.ini' file to avoid entering this information each time.")
+        print("="*60)
 
     def create_ssh_tunnel(self):
         """Create SSH tunnel to the remote Elasticsearch instance using paramiko."""
@@ -541,11 +589,13 @@ def main():
         else:
             sys.exit(1)
             
-    except FileNotFoundError:
-        logging.error("config.ini file not found. Please create it first.")
+    except KeyboardInterrupt:
+        logging.info("Operation cancelled by user.")
+        print("\n❌ Operation cancelled by user.")
         sys.exit(1)
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
+        print(f"❌ Unexpected error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -17,6 +17,7 @@ import time
 import signal
 import atexit
 import argparse
+import getpass
 from datetime import datetime
 
 # Configure logging
@@ -33,7 +34,15 @@ class SSHTunnelRestorer:
     def __init__(self, config_file='config.ini'):
         """Initialize the restorer with SSH tunnel configuration."""
         self.config = configparser.ConfigParser()
-        self.config.read(config_file)
+        
+        # Check if config file exists, if not, use interactive input
+        if not os.path.exists(config_file):
+            logging.warning(f"Configuration file '{config_file}' not found.")
+            print(f"\n⚠️  Configuration file '{config_file}' not found.")
+            print("Please provide the SSH connection details for the destination device:")
+            self._setup_interactive_config()
+        else:
+            self.config.read(config_file)
         
         # SSH tunnel settings
         self.ssh_host = self.config.get('destination_device', 'ssh_host')
@@ -59,6 +68,45 @@ class SSHTunnelRestorer:
         logging.info(f"Initialized SSH tunnel restorer")
         logging.info(f"SSH: {self.ssh_username}@{self.ssh_host}:{self.ssh_port}")
         logging.info(f"Local tunnel port: {self.local_port}")
+
+    def _setup_interactive_config(self):
+        """Setup configuration interactively when config.ini doesn't exist."""
+        print("\n" + "="*60)
+        print("🔧 INTERACTIVE CONFIGURATION SETUP")
+        print("="*60)
+        
+        # Get destination device details
+        print("\n📤 DESTINATION DEVICE (where to restore configurations to):")
+        ssh_host = input("SSH Host/IP address: ").strip()
+        ssh_username = input("SSH Username: ").strip()
+        ssh_password = getpass.getpass("SSH Password: ")
+        
+        # Optional settings with defaults
+        ssh_port_input = input("SSH Port (default: 22): ").strip()
+        ssh_port = int(ssh_port_input) if ssh_port_input else 22
+        
+        local_port_input = input("Local tunnel port (default: 9202): ").strip()
+        local_port = int(local_port_input) if local_port_input else 9202
+        
+        # Create in-memory configuration
+        self.config.add_section('destination_device')
+        self.config.set('destination_device', 'ssh_host', ssh_host)
+        self.config.set('destination_device', 'ssh_username', ssh_username)
+        self.config.set('destination_device', 'ssh_password', ssh_password)
+        self.config.set('destination_device', 'ssh_port', str(ssh_port))
+        self.config.set('destination_device', 'local_port', str(local_port))
+        
+        # Add default settings section
+        self.config.add_section('settings')
+        self.config.set('settings', 'output_dir', 'json_files')
+        self.config.set('settings', 'timeout', '30')
+        self.config.set('settings', 'verify_ssl', 'false')
+        
+        print(f"\n✅ Configuration complete!")
+        print(f"📡 Will connect to: {ssh_username}@{ssh_host}:{ssh_port}")
+        print(f"🔗 Local tunnel port: {local_port}")
+        print("\n💡 Tip: Create a 'config.ini' file to avoid entering this information each time.")
+        print("="*60)
 
     def create_ssh_tunnel(self):
         """Create SSH tunnel to the remote Elasticsearch instance."""
@@ -425,11 +473,13 @@ def main():
         else:
             sys.exit(1)
             
-    except FileNotFoundError as e:
-        logging.error(f"Configuration file not found: {e}")
+    except KeyboardInterrupt:
+        logging.info("Operation cancelled by user.")
+        print("\n❌ Operation cancelled by user.")
         sys.exit(1)
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
+        print(f"❌ Unexpected error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

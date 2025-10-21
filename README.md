@@ -5,10 +5,12 @@ A comprehensive set of Python scripts for collecting, exporting, and restoring E
 ## 🚀 Features
 
 - **Cross-platform SSH tunneling** using Python (no external SSH tools required)
+- **Interactive configuration** when config.ini doesn't exist
 - **Secure remote access** to Elasticsearch instances
 - **Flexible collection options** (full format or definitions only)
 - **Timestamped exports** for easy tracking
 - **Command-line interface** with multiple options
+- **Full path support** for input files
 - **Comprehensive logging** and error handling
 - **Windows, macOS, and Linux support**
 
@@ -39,12 +41,12 @@ pip install -r requirements.txt
 
 ### Configuration
 
-1. Copy the example configuration:
+1. **Option 1: Create configuration file (recommended for repeated use)**
    ```bash
    cp config_example.ini config.ini
    ```
-
-2. Edit `config.ini` with your server details:
+   
+   Edit `config.ini` with your server details:
    ```ini
    [source_device]
    ssh_host = 192.168.1.100
@@ -61,7 +63,58 @@ pip install -r requirements.txt
    local_port = 9202
    ```
 
+2. **Option 2: Interactive configuration (when config.ini doesn't exist)**
+   
+   If no `config.ini` file exists, both scripts will automatically prompt you for connection details:
+   ```bash
+   # Just run the script - it will ask for details interactively
+   python collect_alerts-reports.py
+   ```
+   
+   The script will prompt for:
+   - SSH Host/IP address
+   - SSH Username
+   - SSH Password (hidden input)
+   - SSH Port (optional, default: 22)
+   - Local tunnel port (optional, default: 9201 for collection, 9202 for restore)
+
 ## 📊 Usage
+
+### Quick Start (Interactive Mode)
+
+If you don't have a config file, just run the script and it will guide you:
+
+```bash
+# Collection - will prompt for source device details
+python collect_alerts-reports.py
+
+# Restoration - will prompt for destination device details  
+python restore_alerts-reports.py
+```
+
+**Interactive prompt example:**
+```
+⚠️  Configuration file 'config.ini' not found.
+Please provide the SSH connection details for the source device:
+
+============================================================
+🔧 INTERACTIVE CONFIGURATION SETUP
+============================================================
+
+📥 SOURCE DEVICE (where to collect configurations from):
+SSH Host/IP address: 192.168.1.100
+SSH Username: root
+SSH Password: [hidden]
+SSH Port (default: 22): 
+Local tunnel port (default: 9201): 
+
+✅ Configuration complete!
+📡 Will connect to: root@192.168.1.100:22
+🔗 Local tunnel port: 9201
+
+💡 Tip: Create a 'config.ini' file to avoid entering this information each time.
+============================================================
+```
 
 ### Collection (Export)
 
