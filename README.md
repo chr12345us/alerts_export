@@ -144,7 +144,7 @@ python restore_alerts-reports.py -a json_files/alerts_20251021_143900.json
 python restore_alerts-reports.py -r json_files/reports_20251021_143900.json
 ```
 
-## 📋 Output Files
+##  Output Files
 
 - `alerts_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export for alerts
 - `reports_YYYYMMDD_HHMMSS.json` - Complete Elasticsearch export for reports

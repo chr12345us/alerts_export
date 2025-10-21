@@ -11,6 +11,10 @@ exported_configs*/
 alerts_*.json
 reports_*.json
 
+# Exclude utility outputs
+alert_devices.json
+utilities/*.json
+
 #exclude saves
 saves/
 saves/*.py
