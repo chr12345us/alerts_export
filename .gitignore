@@ -2,6 +2,7 @@
 config.ini
 
 # Exclude log files
+logs/*.log
 *.log
 
 # Exclude collected data files
