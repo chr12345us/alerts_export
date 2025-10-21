@@ -1,0 +1,5 @@
+requests>=2.25.0
+urllib3>=1.26.0
+paramiko>=2.7.0
+# paramiko provides cross-platform SSH functionality
+# No longer requires sshpass or system SSH tools

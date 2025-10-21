@@ -1,0 +1,46 @@
+# Exclude sensitive configuration files
+config.ini
+
+# Exclude log files
+*.log
+
+# Exclude collected data files
+json_files/
+exported_configs*/
+alerts_*.json
+reports_*.json
+*_definitions_*.json
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+venv/
+env/
+.env
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+temp_*
+*.tmp
+
+# SSH keys (if any)
+*.pem
+*.key
+id_rsa*
+
+# Backup files
+*.bak
+*.backup
