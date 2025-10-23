@@ -344,6 +344,9 @@ python update_alerts.py -a json_files/alerts_target.json -o alerts_updated.json
 
 # 4. Review the updated file
 cat json_files/alerts_updated.json
+
+# 5. restore the updated file
+python restore_alerts-reports.py json_files/alerts_updated.json
 ```
 
 This workflow allows you to:
