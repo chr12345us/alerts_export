@@ -53,6 +53,11 @@ def load_input_data(input_file):
         else:
             logging.info("No syslog servers section found - will remove from output")
         
+        if 'alert_names' in data:
+            logging.info(f"Found {len(data['alert_names'])} alert names for filtering")
+        else:
+            logging.info("No alert names section found - no filtering will be applied")
+        
         return data
         
     except Exception as e:
@@ -184,6 +189,59 @@ def update_syslog_servers(obj, syslog_servers, path=""):
     
     return updated_count
 
+def filter_alerts_by_names(obj, alert_names, path=""):
+    """Filter alerts based on the alert_names list, keeping only matching alerts."""
+    if not alert_names:
+        logging.info("No alert names provided - keeping all alerts")
+        return obj, 0
+    
+    filtered_count = 0
+    
+    if isinstance(obj, dict):
+        # Check if this object contains alert data with hits/hits array
+        if 'hits' in obj and isinstance(obj['hits'], dict) and 'hits' in obj['hits']:
+            hits_array = obj['hits']['hits']
+            if isinstance(hits_array, list):
+                original_count = len(hits_array)
+                filtered_hits = []
+                
+                for hit in hits_array:
+                    if isinstance(hit, dict) and '_source' in hit:
+                        source = hit['_source']
+                        if isinstance(source, dict) and 'name' in source:
+                            alert_name = source['name']
+                            if alert_name in alert_names:
+                                filtered_hits.append(hit)
+                                logging.debug(f"Keeping alert: {alert_name}")
+                            else:
+                                logging.debug(f"Filtering out alert: {alert_name}")
+                                filtered_count += 1
+                        else:
+                            # Keep hits without name field
+                            filtered_hits.append(hit)
+                    else:
+                        # Keep hits without _source field
+                        filtered_hits.append(hit)
+                
+                obj['hits']['hits'] = filtered_hits
+                obj['hits']['total'] = len(filtered_hits)
+                
+                logging.info(f"Filtered alerts at {path}: {original_count} -> {len(filtered_hits)} alerts (removed {filtered_count})")
+                return obj, filtered_count
+        
+        # Recursively process nested objects
+        for key, value in obj.items():
+            current_path = f"{path}.{key}" if path else key
+            obj[key], nested_filtered = filter_alerts_by_names(value, alert_names, current_path)
+            filtered_count += nested_filtered
+    
+    elif isinstance(obj, list):
+        for i, item in enumerate(obj):
+            obj[i], nested_filtered = filter_alerts_by_names(item, alert_names, f"{path}[{i}]")
+            filtered_count += nested_filtered
+    
+    return obj, filtered_count
+
 def update_alert_file(alert_file, input_data, output_file):
     """Update an alert file with data from input_data."""
     logging.info(f"Processing alert file: {alert_file}")
@@ -195,6 +253,14 @@ def update_alert_file(alert_file, input_data, output_file):
         
         # Make a deep copy to avoid modifying original
         updated_data = deepcopy(alert_data)
+        
+        # Filter alerts by names if alert_names section exists
+        filtered_count = 0
+        if 'alert_names' in input_data and input_data['alert_names']:
+            updated_data, filtered_count = filter_alerts_by_names(
+                updated_data, 
+                input_data['alert_names']
+            )
         
         # Update device IP filters
         device_ip_updates = update_device_ip_filters(
@@ -219,7 +285,7 @@ def update_alert_file(alert_file, input_data, output_file):
             json.dump(updated_data, f, indent=2)
         
         logging.info(f"Updated alert file saved to: {output_file}")
-        logging.info(f"Updates made - Device IPs: {device_ip_updates}, Recipients: {recipient_updates}, Syslog: {syslog_updates}")
+        logging.info(f"Updates made - Filtered alerts: {filtered_count}, Device IPs: {device_ip_updates}, Recipients: {recipient_updates}, Syslog: {syslog_updates}")
         
         return True
         

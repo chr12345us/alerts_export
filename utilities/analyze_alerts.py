@@ -274,8 +274,9 @@ def main():
             all_recipients.update(result['recipients'])
             all_syslog_servers.update(result['syslog_servers'])
     
-    # Prepare output data with the three requested sections
+    # Prepare output data with the four requested sections
     output_data = {
+        'alert_names': sorted(list(all_alert_names)),
         'deviceIp': sorted(list(all_device_ips)),
         'recipients': sorted(list(all_recipients)),
         'syslogservers': sorted(list(all_syslog_servers))
