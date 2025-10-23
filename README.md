@@ -19,11 +19,15 @@ A comprehensive set of Python scripts for collecting, exporting, and restoring E
 alerts_export/
 ├── collect_alerts-reports.py    # Main collection script
 ├── restore_alerts-reports.py    # Main restore script
+├── analyze_alerts.py            # Alert analysis utility
+├── update_alerts.py             # Alert update utility
 ├── config_example.ini           # Example configuration file
 ├── requirements.txt             # Python dependencies
 ├── README.md                   # Documentation
 ├── logs/                       # Log files directory
-└── json_files/                 # Output directory (excluded from git)
+├── json_files/                 # Output directory (excluded from git)
+├── utilities/                  # Legacy folder (documentation only)
+└── saves/                      # Backup scripts and configurations
 ```
 
 ## 🛠️ Installation
@@ -208,7 +212,147 @@ The scripts include comprehensive error handling and logging:
 
 Check the log files in the `logs/` directory for detailed error information if operations fail.
 
-## 🚨 Troubleshooting
+## �️ Utilities
+
+This section contains utility scripts for analyzing and processing alerts and reports data.
+
+### analyze_alerts.py
+
+Analyzes JSON alert files to extract alert names, device IPs, recipients, and syslog servers. Creates a consolidated `alert_devices.json` file for use with other utilities.
+
+#### Usage
+
+```bash
+# Analyze single file
+python analyze_alerts.py json_files/alerts_20251021_143900.json
+
+# Analyze multiple files
+python analyze_alerts.py json_files/alerts_*.json
+
+# Custom output file
+python analyze_alerts.py json_files/alerts_20251021_143900.json -o custom_output.json
+
+# Verbose analysis with detailed logging
+python analyze_alerts.py json_files/alerts_20251021_143900.json -v
+```
+
+#### Features
+
+- **Alert Name Extraction**: Finds all alert names from alert definitions
+- **Device IP Extraction**: Finds all IP addresses from alert filter configurations
+- **Recipient Extraction**: Finds all email addresses used in notifications
+- **Syslog Server Extraction**: Finds all syslog server configurations
+- **Multi-file Support**: Can analyze multiple JSON files at once
+- **JSON Output**: Results saved to `json_files/alert_devices.json` by default
+
+#### Output Format
+
+```json
+{
+  "alert_names": [
+    "CPU High Alert",
+    "Memory Usage Alert",
+    "Network Interface Down"
+  ],
+  "deviceIp": [
+    "192.168.1.10",
+    "192.168.1.20",
+    "10.0.1.5"
+  ],
+  "recipients": [
+    "admin@company.com",
+    "alerts@company.com",
+    "network-team@company.com"
+  ],
+  "syslogservers": [
+    "syslog.company.com",
+    "192.168.1.100"
+  ]
+}
+```
+
+#### Command Line Options
+
+- `files`: One or more JSON files to analyze (required)
+- `-o, --output`: Output JSON file name (default: json_files/alert_devices.json)
+- `-v, --verbose`: Enable verbose debug logging
+
+### update_alerts.py
+
+Updates alert configuration files using data from `alert_devices.json`. Provides filtering, device IP updates, recipient updates, and syslog server management.
+
+#### Usage
+
+```bash
+# Update alert file with all data from alert_devices.json
+python update_alerts.py -a json_files/alerts_original.json -o updated_alerts.json
+
+# Use custom input file
+python update_alerts.py -i json_files/custom_devices.json -a json_files/alerts_original.json -o updated_alerts.json
+
+# Verbose operation with detailed logging
+python update_alerts.py -a json_files/alerts_original.json -o updated_alerts.json -v
+```
+
+#### Features
+
+- **Alert Filtering**: Keeps only alerts whose names are in the `alert_names` section
+- **Device IP Updates**: Replaces all deviceIp filter values with new IPs
+- **Recipient Updates**: Replaces all recipient lists with new email addresses
+- **Syslog Server Management**: Updates or removes syslog server configurations
+- **Safe Operations**: Creates new files without modifying originals
+- **Comprehensive Logging**: Detailed logging of all changes made
+
+#### Workflow Integration
+
+1. **Analysis Phase**: Use `analyze_alerts.py` to extract data from source files
+2. **Update Phase**: Use `update_alerts.py` to apply extracted data to target files
+
+```bash
+# Step 1: Analyze source files to extract configurations
+python analyze_alerts.py json_files/source_alerts_*.json
+
+# Step 2: Apply extracted configurations to target file
+python update_alerts.py -a json_files/target_alerts.json -o updated_target_alerts.json
+```
+
+#### Update Operations
+
+1. **Alert Name Filtering**: Filters the input alert file to keep only alerts whose names appear in the `alert_names` section
+2. **Device IP Replacement**: Cycles through available device IPs to replace existing deviceIp filter values
+3. **Recipient Replacement**: Replaces all recipient arrays with the standardized recipient list
+4. **Syslog Server Update**: Updates syslog server configurations or removes them if none are provided
+
+#### Command Line Options
+
+- `-i, --input`: Input JSON file with extracted data (default: json_files/alert_devices.json)
+- `-a, --alert`: Alert JSON file to update (required)
+- `-o, --output`: Output JSON file name - will be saved to json_files/ folder (required)
+- `-v, --verbose`: Enable verbose debug logging
+
+### Example Workflow
+
+```bash
+# 1. Collect alerts from source system
+python collect_alerts-reports.py
+
+# 2. Analyze collected alerts to extract key data
+python analyze_alerts.py json_files/alerts_20251023_*.json
+
+# 3. Update target alert file with extracted configurations
+python update_alerts.py -a json_files/alerts_target.json -o alerts_updated.json
+
+# 4. Review the updated file
+cat json_files/alerts_updated.json
+```
+
+This workflow allows you to:
+- Extract standardized configurations from source alert files
+- Filter alerts to keep only desired ones
+- Apply consistent device IPs, recipients, and syslog servers
+- Create clean, standardized alert configuration files
+
+## �🚨 Troubleshooting
 
 ### Common Issues
 
